@@ -1,0 +1,174 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { KindPill, Spots } from "#app/shared/templates/shift-bits";
+import { Shift, Signup } from "#app/shared/services/shifts";
+import { dayKey, relativeDay, formatShortDay, formatTimeRange } from "#app/shared/lib/format";
+import { countsFor, ShiftCounts } from "#app/shared/lib/roster";
+
+interface Row {
+  id: string;
+  shift: Shift;
+  counts: ShiftCounts;
+  dayStart: boolean;
+  short: boolean;
+  past: boolean;
+}
+
+interface Ui {
+  view: "all" | "short";
+}
+
+function newUi(): Ui {
+  return { view: "all" };
+}
+
+/** Today's shifts (including ones already over, for check-in) and everything after. */
+function rows(shifts: LiveView<Shift>, signups: LiveView<Signup>, view: Ui["view"]): Row[] {
+  let now = Date.now();
+  let today = dayKey(new Date());
+  let list: Row[] = [];
+  let lastDay = "";
+
+  let sorted = shifts
+    .filter((s) => dayKey(s.startsAt) >= today)
+    .sort((a, b) => +a.startsAt - +b.startsAt);
+
+  for (let shift of sorted) {
+    let counts = countsFor(signups, shift.id, shift.capacity);
+    let past = +shift.endsAt < now;
+    let short = !past && counts.left > 0;
+
+    if (view === "short" && !short) {
+      continue;
+    }
+
+    let key = dayKey(shift.startsAt);
+    list.push({ id: shift.id, shift, counts, short, past, dayStart: key !== lastDay });
+    lastDay = key;
+  }
+
+  return list;
+}
+
+function openSpots(shifts: LiveView<Shift>, signups: LiveView<Signup>): number {
+  return rows(shifts, signups, "short").reduce((n, r) => n + r.counts.left, 0);
+}
+
+function upcomingCount(shifts: LiveView<Shift>): number {
+  let now = Date.now();
+
+  return shifts.filter((s) => +s.endsAt > now).length;
+}
+
+/** "Needs 3 in 20h" reads as urgent; a shift a week out just "Needs 3". */
+function needLabel(row: Row): string {
+  let hours = (+row.shift.startsAt - Date.now()) / 3_600_000;
+  let base = `Needs ${row.counts.left}`;
+
+  return hours < 48 ? `${base} · in ${Math.max(1, Math.round(hours))}h` : base;
+}
+
+<html lang="en" class="page-admin" (
+  userName: string,
+  shifts: LiveView<Shift>,
+  signups: LiveView<Signup>,
+  volunteers: number,
+  private ui: Ui = newUi(),
+)>
+  <head>
+    <title>Shifts · Rostergrove coordinator</title>
+    <meta name="description" content="Upcoming shifts and who is on them.">
+  </head>
+  <body>
+    <Layout active="dashboard" role="coordinator" {userName} width="is-wide">
+      <div class="stack is-xl">
+        <div class="admin-head">
+          <div class="stack is-xs">
+            <h1>Shifts</h1>
+            <p class="lede">The next two weeks at a glance. Fills update live as volunteers sign up.</p>
+          </div>
+
+          <div class="cluster is-sm">
+            <a class="button" href="/admin/hours.csv" download>Export hours (CSV)</a>
+            <a class="button is-primary" href="/admin/new">New shift</a>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">Upcoming shifts</span>
+            <span class="stat-value">{upcomingCount(shifts)}</span>
+          </div>
+          <div class={["stat", rows(shifts, signups, "short").length > 0 && "is-warning"]}>
+            <span class="stat-label">Short of volunteers</span>
+            <span class="stat-value">{rows(shifts, signups, "short").length}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Open spots</span>
+            <span class="stat-value">{openSpots(shifts, signups)}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Volunteers</span>
+            <span class="stat-value">{volunteers}</span>
+          </div>
+        </div>
+
+        <div class="stack is-md">
+          <div class="toolbar">
+            <h2>Schedule</h2>
+            <div class="segmented" role="group" aria-label="Show">
+              <button type="button" class={["is-sm", ui.view === "all" && "is-active"]} onclick={() => ui.view = "all"}>All shifts</button>
+              <button type="button" class={["is-sm", ui.view === "short" && "is-active"]} onclick={() => ui.view = "short"}>Short only</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th class="col-where">Location</th>
+                  <th>Filled</th>
+                  <th>Status</th>
+                  <th><span class="sr-only">Roster</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr e:for={row of rows(shifts, signups, ui.view)}
+                    class={[row.short && "is-short", row.past && "is-past", row.dayStart && "day-start"]}>
+                  <td class="cell-day">
+                    <span e:if={row.dayStart}>
+                      {relativeDay(row.shift.startsAt)}
+                      <small e:if={relativeDay(row.shift.startsAt) === "Today" || relativeDay(row.shift.startsAt) === "Tomorrow"}>{formatShortDay(row.shift.startsAt)}</small>
+                    </span>
+                  </td>
+                  <td class="cell-time">{formatTimeRange(row.shift.startsAt, row.shift.endsAt)}</td>
+                  <td><KindPill kind={row.shift.kind} /></td>
+                  <td class="cell-where" title={row.shift.location}>{row.shift.location}</td>
+                  <td class="cell-need">
+                    <Spots counts={row.counts} capacity={row.shift.capacity} short={row.short} done={row.past} />
+                  </td>
+                  <td>
+                    <span e:if={row.past} class="pill">Done</span>
+                    <span e:elseif={row.short} class="pill is-warning"><span class="pill-dot"></span>{needLabel(row)}</span>
+                    <span e:elseif={row.counts.waitlist > 0} class="pill is-success">Full · {row.counts.waitlist} waiting</span>
+                    <span e:else class="pill is-success">Full</span>
+                  </td>
+                  <td class="cell-actions">
+                    <a class="button is-sm is-ghost" href={`/admin/shifts/${row.shift.id}`}>Roster →</a>
+                  </td>
+                </tr>
+                <tr e:if={rows(shifts, signups, ui.view).length === 0} class="empty-row">
+                  <td colspan={7}>{ui.view === "short" ? "Every upcoming shift is fully staffed." : "No upcoming shifts. Create one to get started."}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>

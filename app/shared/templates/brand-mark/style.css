@@ -1,0 +1,14 @@
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.brand-mark svg {
+  flex: none;
+  color: var(--accent);
+}

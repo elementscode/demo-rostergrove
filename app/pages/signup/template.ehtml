@@ -1,0 +1,95 @@
+import "./style.css";
+import { redirect, ValidationError } from "@elements/app";
+import { signup, MIN_PASSWORD, SignupForm } from "#app/shared/services/auth";
+import { AuthShell } from "#app/shared/templates/auth-shell";
+
+interface FormState {
+  values: SignupForm;
+  errors: Partial<Record<keyof SignupForm, string>>;
+  error: string;
+  busy: boolean;
+}
+
+function onSubmit(form: FormState) {
+  form.busy = true;
+
+  try {
+    signup(form.values);
+    form.errors = {};
+    form.error = "";
+    redirect("/");
+  } catch (err: any) {
+    form.busy = false;
+
+    if (err instanceof ValidationError && err.errors) {
+      let errors: FormState["errors"] = {};
+
+      for (let [key, messages] of Object.entries(err.errors)) {
+        errors[key as keyof SignupForm] = (messages as string[])[0];
+      }
+
+      form.errors = errors;
+      form.error = "";
+    } else {
+      form.error = err.message;
+    }
+  }
+}
+
+<html lang="en" class="page-signup" (
+  private form: FormState = {
+    values: { name: "", email: "", phone: "", password: "" },
+    errors: {},
+    error: "",
+    busy: false,
+  },
+)>
+  <head>
+    <title>Sign up · Rostergrove</title>
+    <meta name="description" content="Sign up to volunteer at the Grove Street Food Bank.">
+  </head>
+  <body>
+    <AuthShell title="Sign up to volunteer" lede="It takes a minute. Then pick any shift with a spot open.">
+      <form class="stack" onsubmit={() => onSubmit(form)}>
+        <p e:if={form.error} class="error" role="alert">{form.error}</p>
+
+        <div class="field">
+          <label for="name">Full name</label>
+          <input id="name" name="name" value={form.values.name} autocomplete="name"
+                 class={[form.errors.name && "is-error"]} required>
+          <p e:if={form.errors.name} class="error">{form.errors.name}</p>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" value={form.values.email}
+                 autocomplete="email" autocapitalize="none" spellcheck={false}
+                 placeholder="you@example.org" class={[form.errors.email && "is-error"]} required>
+          <p e:if={form.errors.email} class="error">{form.errors.email}</p>
+        </div>
+
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="tel" value={form.values.phone}
+                 autocomplete="tel" placeholder="(312) 555-0142"
+                 class={[form.errors.phone && "is-error"]} required>
+          <p e:if={form.errors.phone} class="error">{form.errors.phone}</p>
+          <p e:else class="hint">So the coordinator can reach you on the day.</p>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" value={form.values.password}
+                 autocomplete="new-password" minlength={MIN_PASSWORD}
+                 class={[form.errors.password && "is-error"]} required>
+          <p e:if={form.errors.password} class="error">{form.errors.password}</p>
+          <p e:else class="hint">At least {MIN_PASSWORD} characters.</p>
+        </div>
+
+        <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Create account</button>
+
+        <p class="hint">Already volunteering? <a href="/signin">Sign in</a></p>
+      </form>
+    </AuthShell>
+  </body>
+</html>

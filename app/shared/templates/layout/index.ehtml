@@ -1,0 +1,39 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import { signout } from "#app/shared/services/auth";
+import { BrandMark } from "#app/shared/templates/brand-mark";
+
+function onSignout() {
+  signout();
+  redirect("/signin");
+}
+
+<Layout (active: string, role: string, userName: string, width: string = "")>
+  <div class="app">
+    <header class="layout-header">
+      <div class={["page-shell layout-bar", width === "is-wide" && "is-wide"]}>
+        <BrandMark href={role === "coordinator" ? "/admin" : "/"} />
+
+        <nav e:if={role === "coordinator"} class="layout-nav cluster is-xs" aria-label="Main">
+          <a href="/admin" class={[active === "dashboard" && "is-active"]}>Shifts</a>
+          <a href="/admin/new" class={[active === "new" && "is-active"]}>New shift</a>
+          <a href="/admin/hours.csv" download>Export hours</a>
+        </nav>
+
+        <nav e:else class="layout-nav cluster is-xs" aria-label="Main">
+          <a href="/" class={[active === "shifts" && "is-active"]}>Shifts</a>
+          <a href="/#mine" class={[active === "mine" && "is-active"]}>My schedule</a>
+        </nav>
+
+        <div class="layout-user row is-sm">
+          <span class="layout-user-name">{userName}</span>
+          <button type="button" class="is-ghost is-sm" onclick={() => onSignout()}>Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class={["app-main page-shell layout-main", width]}>
+      <slot/>
+    </main>
+  </div>
+</Layout>

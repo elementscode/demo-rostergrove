@@ -1,0 +1,23 @@
+import "./style.css";
+
+/**
+ * The day-before reminder for a confirmed shift.
+ *
+ * @email
+ */
+<html (name: string, kind: string, day: string, time: string, location: string)>
+  <body class="email shift-reminder">
+    <p>Hi {name},</p>
+    <p>A reminder that you're volunteering tomorrow at the Grove Street Food Bank:</p>
+
+    <div class="details">
+      <p class="when">{kind}</p>
+      <p>{day}, {time}</p>
+      <p>{location}</p>
+    </div>
+
+    <p>Please arrive five minutes early and check in with the coordinator. Closed-toe shoes, please.</p>
+    <p>Can't make it? <a href="/">Drop the shift</a> so someone on the waitlist can take your spot.</p>
+    <p class="muted">Thank you. Rostergrove</p>
+  </body>
+</html>

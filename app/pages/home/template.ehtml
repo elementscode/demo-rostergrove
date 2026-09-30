@@ -1,0 +1,266 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { KindPill, Spots } from "#app/shared/templates/shift-bits";
+import { Shift, Signup, joinShift, leaveShift } from "#app/shared/services/shifts";
+import { ShiftKind, KINDS, KIND_LABELS, dayKey, relativeDay, formatShortDay, formatTime, formatTimeRange, formatHours, hoursBetween } from "#app/shared/lib/format";
+import { countsFor, waitlistPosition } from "#app/shared/lib/roster";
+
+interface Ui {
+  filter: ShiftKind | "all";
+  pending: string;
+  notice: string;
+  noticeKind: "success" | "warning" | "danger";
+}
+
+function newUi(): Ui {
+  return { filter: "all", pending: "", notice: "", noticeKind: "success" };
+}
+
+interface Day {
+  key: string;
+  label: string;
+  shifts: Shift[];
+}
+
+/** Upcoming shifts that haven't ended, soonest first, grouped by day. */
+function upcomingDays(shifts: LiveView<Shift>, filter: Ui["filter"]): Day[] {
+  let now = Date.now();
+  let days: Day[] = [];
+
+  let list = shifts
+    .filter((s) => +s.endsAt > now && (filter === "all" || s.kind === filter))
+    .sort((a, b) => +a.startsAt - +b.startsAt);
+
+  for (let shift of list) {
+    let key = dayKey(shift.startsAt);
+    let day = days.find((d) => d.key === key);
+
+    if (!day) {
+      day = { key, label: relativeDay(shift.startsAt), shifts: [] };
+      days.push(day);
+    }
+
+    day.shifts.push(shift);
+  }
+
+  return days;
+}
+
+function kindCount(shifts: LiveView<Shift>, kind: ShiftKind | "all"): number {
+  let now = Date.now();
+
+  return shifts.filter((s) => +s.endsAt > now && (kind === "all" || s.kind === kind)).length;
+}
+
+interface MineRow {
+  shift: Shift;
+  signup: Signup;
+}
+
+function mySchedule(shifts: LiveView<Shift>, signups: LiveView<Signup>, userId: string): MineRow[] {
+  let now = Date.now();
+  let rows: MineRow[] = [];
+
+  for (let signup of signups.filter((s) => s.userId === userId)) {
+    let shift = shifts.get(signup.shiftId);
+
+    if (shift && +shift.endsAt > now) {
+      rows.push({ shift, signup });
+    }
+  }
+
+  return rows.sort((a, b) => +a.shift.startsAt - +b.shift.startsAt);
+}
+
+function mineFor(signups: LiveView<Signup>, shiftId: string, userId: string): Signup | undefined {
+  return signups.find((s) => s.shiftId === shiftId && s.userId === userId);
+}
+
+function show(ui: Ui, kind: Ui["noticeKind"], message: string) {
+  ui.notice = message;
+  ui.noticeKind = kind;
+
+  setTimeout(() => {
+    if (ui.notice === message) {
+      ui.notice = "";
+    }
+  }, 4000);
+}
+
+function onJoin(ui: Ui, shift: Shift) {
+  ui.pending = shift.id;
+
+  try {
+    let status = joinShift(shift.id);
+    let day = relativeDay(shift.startsAt);
+    let when = `${day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day} at ${formatTime(shift.startsAt)}`;
+
+    if (status === "confirmed") {
+      show(ui, "success", `You're on the ${KIND_LABELS[shift.kind].toLowerCase()} shift ${when}. We'll email a reminder the day before.`);
+    } else {
+      show(ui, "warning", `That shift is full, so you're on the waitlist. You'll move up if a spot opens.`);
+    }
+  } catch (err: any) {
+    show(ui, "danger", err.message);
+  } finally {
+    ui.pending = "";
+  }
+}
+
+function onLeave(ui: Ui, shift: Shift, signup: Signup) {
+  let what = signup.status === "confirmed" ? "drop this shift" : "leave the waitlist";
+
+  if (!confirm(`Sure you want to ${what}?`)) {
+    return;
+  }
+
+  ui.pending = shift.id;
+
+  try {
+    leaveShift(shift.id);
+    show(ui, "success", signup.status === "confirmed" ? "Shift dropped. Thanks for letting us know." : "You've left the waitlist.");
+  } catch (err: any) {
+    show(ui, "danger", err.message);
+  } finally {
+    ui.pending = "";
+  }
+}
+
+<html lang="en" class="page-home" (
+  userId: string,
+  userName: string,
+  shifts: LiveView<Shift>,
+  signups: LiveView<Signup>,
+  served: { hours: number; shifts: number },
+  year: number,
+  private ui: Ui = newUi(),
+)>
+  <head>
+    <title>Shifts · Rostergrove</title>
+    <meta name="description" content="Upcoming volunteer shifts at the Grove Street Food Bank.">
+  </head>
+  <body>
+    <Layout active="shifts" role="volunteer" {userName}>
+      <div class="stack is-xl">
+        <div class="home-intro">
+          <div class="stack is-xs">
+            <h1>Hi, {userName.split(" ")[0]}</h1>
+            <p class="lede">Pick up a shift. Spots update live as others sign up.</p>
+          </div>
+
+          <div class="filters" role="group" aria-label="Shift type">
+            <button type="button" class={["is-sm", ui.filter === "all" && "is-active"]} onclick={() => ui.filter = "all"}>
+              All <span class="filter-count">{kindCount(shifts, "all")}</span>
+            </button>
+            <button e:for={kind of KINDS} type="button" class={["is-sm", ui.filter === kind && "is-active"]}
+                    onclick={() => ui.filter = kind}>
+              {KIND_LABELS[kind]} <span class="filter-count">{kindCount(shifts, kind)}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="home-grid">
+          <section class="stack is-xl" aria-label="Upcoming shifts">
+            <div e:for={day of upcomingDays(shifts, ui.filter)} class="day">
+              <h2 class="day-head">
+                {day.label}
+                <small e:if={day.label === "Today" || day.label === "Tomorrow"}>{formatShortDay(day.shifts[0].startsAt)}</small>
+              </h2>
+
+              <ul class="shift-list">
+                <ShiftRow e:for={shift of day.shifts} {shift} {signups} {userId} {ui} />
+              </ul>
+            </div>
+
+            <p e:if={upcomingDays(shifts, ui.filter).length === 0} class="empty">
+              No upcoming {ui.filter === "all" ? "" : KIND_LABELS[ui.filter].toLowerCase() + " "}shifts yet. Check back soon.
+            </p>
+          </section>
+
+          <aside class="home-aside stack is-lg" id="mine">
+            <div class="card hours-card">
+              <div class="card-body">
+                <p class="hours-eyebrow">Hours served in {year}</p>
+                <p class="hours-value">{formatHours(served.hours)} <small>{served.hours === 1 ? "hour" : "hours"}</small></p>
+                <p class="hours-sub">
+                  <span e:if={served.shifts > 0}>Across {served.shifts} {served.shifts === 1 ? "shift" : "shifts"}. Thank you.</span>
+                  <span e:else>Your first checked-in shift starts the count.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h2>My schedule</h2>
+              </div>
+              <div class="card-body">
+                <ul e:if={mySchedule(shifts, signups, userId).length > 0} class="mine-list">
+                  <li e:for={row of mySchedule(shifts, signups, userId)}>
+                    <span class="mine-when">{relativeDay(row.shift.startsAt)} · {formatTimeRange(row.shift.startsAt, row.shift.endsAt)}</span>
+                    <span class="mine-what">{KIND_LABELS[row.shift.kind]} · {row.shift.location.split(" · ")[0]}</span>
+                    <span e:if={row.signup.status === "waitlist"} class="shift-status is-waiting">
+                      Waitlist #{waitlistPosition(signups, row.shift.id, userId)}
+                    </span>
+                  </li>
+                </ul>
+                <p e:else class="mine-empty">You haven't signed up for anything yet. Every shift on the left with a spot open is yours to take.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div e:if={ui.notice} class="notice" role="status">
+        <div class={["callout", "is-" + ui.noticeKind]}>{ui.notice}</div>
+      </div>
+    </Layout>
+  </body>
+</html>
+
+<ShiftRow (shift: Shift, signups: LiveView<Signup>, userId: string, ui: Ui)>
+  <li class={[
+    "shift",
+    mineFor(signups, shift.id, userId)?.status === "confirmed" && "is-mine",
+    mineFor(signups, shift.id, userId)?.status === "waitlist" && "is-waiting",
+  ]}>
+    <div class="shift-time">
+      <strong>{formatTime(shift.startsAt)}</strong>
+      <span>to {formatTime(shift.endsAt)} · {formatHours(hoursBetween(shift.startsAt, shift.endsAt))}h</span>
+    </div>
+
+    <div class="shift-what">
+      <KindPill kind={shift.kind} />
+      <span class="shift-where" title={shift.location}>{shift.location}</span>
+    </div>
+
+    <Spots counts={countsFor(signups, shift.id, shift.capacity)} capacity={shift.capacity} short={true} />
+
+    <div class="shift-action">
+      <ShiftAction {shift} {signups} {userId} {ui} mine={mineFor(signups, shift.id, userId)} />
+    </div>
+  </li>
+</ShiftRow>
+
+<ShiftAction (shift: Shift, signups: LiveView<Signup>, userId: string, ui: Ui, mine: Signup | undefined)>
+  <span e:if={+shift.startsAt <= Date.now()} class="shift-status">In progress</span>
+
+  <div e:elseif={mine?.status === "confirmed"} class="shift-action-group">
+    <span class="shift-status">You're on this shift</span>
+    <button type="button" class="is-ghost is-sm" disabled={ui.pending === shift.id}
+            onclick={() => onLeave(ui, shift, mine!)}>Drop shift</button>
+  </div>
+
+  <div e:elseif={mine?.status === "waitlist"} class="shift-action-group">
+    <span class="shift-status is-waiting">Waitlist #{waitlistPosition(signups, shift.id, userId)}</span>
+    <button type="button" class="is-ghost is-sm" disabled={ui.pending === shift.id}
+            onclick={() => onLeave(ui, shift, mine!)}>Leave waitlist</button>
+  </div>
+
+  <button e:elseif={countsFor(signups, shift.id, shift.capacity).left === 0} type="button"
+          class={["is-sm", ui.pending === shift.id && "is-loading"]} disabled={ui.pending === shift.id}
+          onclick={() => onJoin(ui, shift)}>Join waitlist</button>
+
+  <button e:else type="button" class={["is-primary is-sm", ui.pending === shift.id && "is-loading"]}
+          disabled={ui.pending === shift.id} onclick={() => onJoin(ui, shift)}>Sign up</button>
+</ShiftAction>
