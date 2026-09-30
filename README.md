@@ -1,4 +1,4 @@
-![Rostergrove, a volunteer shift signup app built with Elements: the coordinator's two-week schedule with full shifts, waitlists and short-staffed shifts highlighted.](POSTER_URL)
+![Rostergrove, a volunteer shift signup app built with Elements: the coordinator's two-week schedule with full shifts, waitlists and short-staffed shifts highlighted.](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92/poster?v=ed1666d09742)
 
 # Rostergrove
 
@@ -6,7 +6,7 @@
 
 Volunteers pick up shifts with live spots left, waitlists and day-before reminders; coordinators set weekly shifts, check people in and export hours.
 
-**Demo:** [Rostergrove](DEMO_URL)
+**Demo:** [Rostergrove](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92)
 
 ## Agent specs
 
