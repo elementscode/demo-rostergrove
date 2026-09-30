@@ -1,0 +1,74 @@
+@import "#app/shared/styles/page.css";
+
+.page-admin-new h1 {
+  margin: 0;
+  font-size: var(--text-3xl);
+  letter-spacing: -0.02em;
+}
+
+.page-admin-new .lede {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.page-admin-new .kind-choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.page-admin-new .kind-choice label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.page-admin-new .kind-choice label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.page-admin-new .fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.page-admin-new .fields .is-full {
+  grid-column: 1 / -1;
+}
+
+.page-admin-new .repeat {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+}
+
+.page-admin-new .repeat .row {
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.page-admin-new .repeat input[type="number"] {
+  width: 5.5rem;
+}
+
+.page-admin-new .preview {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+@media (max-width: 40rem) {
+  .page-admin-new .kind-choice,
+  .page-admin-new .fields {
+    grid-template-columns: 1fr;
+  }
+}

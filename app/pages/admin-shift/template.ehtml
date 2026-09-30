@@ -1,0 +1,176 @@
+import "./style.css";
+import { LiveView, redirect } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { KindPill, Spots } from "#app/shared/templates/shift-bits";
+import { Shift, RosterEntry, setCheckIn, removeSignup, cancelShift } from "#app/shared/services/shifts";
+import { KIND_LABELS, dayKey, formatDay, formatTime, formatTimeRange } from "#app/shared/lib/format";
+import { countsFor, waitlistFor } from "#app/shared/lib/roster";
+
+interface Ui {
+  error: string;
+}
+
+function newUi(): Ui {
+  return { error: "" };
+}
+
+function confirmed(roster: LiveView<RosterEntry>): RosterEntry[] {
+  return roster
+    .filter((r) => r.status === "confirmed")
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function openSpots(roster: LiveView<RosterEntry>, shift: Shift): number[] {
+  let left = countsFor(roster, shift.id, shift.capacity).left;
+
+  return Array.from({ length: left }, (_, i) => i);
+}
+
+function checkedIn(roster: LiveView<RosterEntry>): number {
+  return roster.filter((r) => r.status === "confirmed" && r.checkedInAt !== null).length;
+}
+
+function initials(name: string): string {
+  return name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function formatPhone(phone: string): string {
+  let d = phone.replace(/\D/g, "");
+
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : phone;
+}
+
+function isShiftDay(shift: Shift): boolean {
+  return dayKey(shift.startsAt) === dayKey(new Date());
+}
+
+function onCheckIn(ui: Ui, entry: RosterEntry, checked: boolean) {
+  try {
+    setCheckIn(entry.id, checked);
+    ui.error = "";
+  } catch (err: any) {
+    ui.error = err.message;
+  }
+}
+
+function onRemove(ui: Ui, entry: RosterEntry) {
+  if (!confirm(`Take ${entry.name} off this shift?`)) {
+    return;
+  }
+
+  try {
+    removeSignup(entry.id);
+    ui.error = "";
+  } catch (err: any) {
+    ui.error = err.message;
+  }
+}
+
+function onCancel(ui: Ui, shift: Shift) {
+  if (!confirm("Cancel this shift? Everyone signed up comes off it.")) {
+    return;
+  }
+
+  try {
+    cancelShift(shift.id);
+    redirect("/admin");
+  } catch (err: any) {
+    ui.error = err.message;
+  }
+}
+
+<html lang="en" class="page-admin-shift" (
+  userName: string,
+  shift: Shift,
+  roster: LiveView<RosterEntry>,
+  private ui: Ui = newUi(),
+)>
+  <head>
+    <title>{KIND_LABELS[shift.kind]} · {formatDay(shift.startsAt)} · Rostergrove</title>
+    <meta name="description" content="Shift roster and check-in.">
+  </head>
+  <body>
+    <Layout active="dashboard" role="coordinator" {userName} width="is-form">
+      <div class="stack is-xl">
+        <div class="stack is-md">
+          <a class="back" href="/admin">← All shifts</a>
+
+          <div class="shift-head">
+            <div class="stack is-sm">
+              <KindPill kind={shift.kind} />
+              <h1>{formatDay(shift.startsAt)}</h1>
+              <p class="shift-meta">{formatTimeRange(shift.startsAt, shift.endsAt)} · {shift.location}</p>
+            </div>
+
+            <div class={["shift-summary", countsFor(roster, shift.id, shift.capacity).left > 0 && +shift.endsAt > Date.now() && "is-short"]}>
+              <Spots counts={countsFor(roster, shift.id, shift.capacity)} capacity={shift.capacity} short={+shift.endsAt > Date.now()} done={+shift.endsAt <= Date.now()} />
+              <span class="checkin-count">{checkedIn(roster)} of {confirmed(roster).length} checked in</span>
+            </div>
+          </div>
+        </div>
+
+        <p e:if={ui.error} class="callout is-danger" role="alert">{ui.error}</p>
+
+        <section class="card">
+          <div class="card-head row" style="justify-content: space-between">
+            <h2>Roster</h2>
+            <span e:if={!isShiftDay(shift)} class="hint">Check-in opens on {formatDay(shift.startsAt)}</span>
+          </div>
+
+          <ul e:if={confirmed(roster).length > 0 || openSpots(roster, shift).length > 0} class="people">
+            <li e:for={entry of confirmed(roster)} class={["person", entry.checkedInAt && "is-in"]}>
+              <span class="avatar" aria-hidden="true">{initials(entry.name)}</span>
+              <span class="person-who">
+                <span class="person-name">{entry.name}</span>
+                <span class="person-contact">
+                  <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+                </span>
+              </span>
+
+              <label e:if={isShiftDay(shift)} class="checkin">
+                <input type="checkbox" checked={!!entry.checkedInAt}
+                       onchange={(e: Event) => onCheckIn(ui, entry, (e.target as HTMLInputElement).checked)}>
+                <span e:if={entry.checkedInAt} class="checkin-time">In at {formatTime(entry.checkedInAt!)}</span>
+                <span e:else>Check in</span>
+              </label>
+              <span e:else></span>
+
+              <button type="button" class="is-ghost is-sm remove" onclick={() => onRemove(ui, entry)}>Remove</button>
+            </li>
+
+            <li e:for={i of openSpots(roster, shift)} class="open-spot">
+              <span class="avatar" aria-hidden="true">+</span>
+              <span>Open spot</span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Waitlist</h2>
+          </div>
+
+          <ol e:if={waitlistFor(roster, shift.id).length > 0} class="people">
+            <li e:for={entry of waitlistFor(roster, shift.id)} class="person">
+              <span class="position">{waitlistFor(roster, shift.id).indexOf(entry) + 1}</span>
+              <span class="person-who">
+                <span class="person-name">{entry.name}</span>
+                <span class="person-contact">
+                  <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+                </span>
+              </span>
+              <span class="hint">Moves up if a spot opens</span>
+              <button type="button" class="is-ghost is-sm remove" onclick={() => onRemove(ui, entry)}>Remove</button>
+            </li>
+          </ol>
+          <p e:else class="people-empty">Nobody waiting.</p>
+        </section>
+
+        <div e:if={+shift.startsAt > Date.now()} class="danger-zone">
+          <span>Plans changed? Cancelling removes the shift and everyone's signup.</span>
+          <button type="button" class="is-danger is-ghost is-sm" onclick={() => onCancel(ui, shift)}>Cancel shift</button>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>

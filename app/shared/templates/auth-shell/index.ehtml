@@ -1,0 +1,32 @@
+import "./style.css";
+import { BrandMark } from "#app/shared/templates/brand-mark";
+
+<AuthShell (title: string, lede: string)>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <BrandMark href="/signin" />
+
+      <div class="auth-pitch stack is-md">
+        <h2>Every crate sorted, every box delivered.</h2>
+        <p>Pick up shifts at the Grove Street Food Bank, see how many hands each one still needs, and keep track of the hours you give.</p>
+      </div>
+
+      <ul class="auth-facts stack is-sm">
+        <li>Sorting, packing and delivery shifts, six days a week</li>
+        <li>Spots left update the moment someone signs up</li>
+        <li>A reminder email the day before each shift</li>
+      </ul>
+    </aside>
+
+    <main class="auth-main">
+      <div class="auth-panel stack is-lg">
+        <div class="stack is-xs">
+          <h1>{title}</h1>
+          <p class="lede">{lede}</p>
+        </div>
+
+        <slot/>
+      </div>
+    </main>
+  </div>
+</AuthShell>

@@ -1,0 +1,172 @@
+import "./style.css";
+import { redirect, ValidationError } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { createShifts, NewShiftForm, MAX_WEEKS } from "#app/shared/services/shifts";
+import { KINDS, KIND_LABELS, ShiftKind, formatDay, zonedMoment } from "#app/shared/lib/format";
+
+interface FormState {
+  values: NewShiftForm;
+  repeat: boolean;
+  errors: Partial<Record<keyof NewShiftForm, string>>;
+  error: string;
+  busy: boolean;
+}
+
+const DEFAULT_LOCATIONS: Record<ShiftKind, string> = {
+  sorting: "Main Warehouse · 41 Oak St",
+  packing: "Main Warehouse · 41 Oak St",
+  delivery: "Delivery Depot · 9 Mill Rd",
+};
+
+function newForm(date: string): FormState {
+  return {
+    values: {
+      kind: "sorting",
+      date,
+      startTime: "09:00",
+      endTime: "12:00",
+      location: DEFAULT_LOCATIONS.sorting,
+      capacity: 6,
+      weeks: 8,
+    },
+    repeat: false,
+    errors: {},
+    error: "",
+    busy: false,
+  };
+}
+
+function pickKind(form: FormState, kind: ShiftKind) {
+  let wasDefault = Object.values(DEFAULT_LOCATIONS).includes(form.values.location);
+  form.values.kind = kind;
+
+  if (wasDefault || !form.values.location.trim()) {
+    form.values.location = DEFAULT_LOCATIONS[kind];
+  }
+}
+
+function preview(form: FormState): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.values.date)) {
+    return "";
+  }
+
+  let day = formatDay(zonedMoment(form.values.date, "12:00"));
+  let weekday = day.split(",")[0];
+
+  return form.repeat
+    ? `Every ${weekday}, ${form.values.weeks} weeks starting ${day}.`
+    : `One shift on ${day}.`;
+}
+
+function onSubmit(form: FormState) {
+  form.busy = true;
+
+  try {
+    createShifts({ ...form.values, weeks: form.repeat ? Number(form.values.weeks) : 1 });
+    redirect("/admin");
+  } catch (err: any) {
+    form.busy = false;
+
+    if (err instanceof ValidationError && err.errors) {
+      let errors: FormState["errors"] = {};
+
+      for (let [key, messages] of Object.entries(err.errors)) {
+        errors[key as keyof NewShiftForm] = (messages as string[])[0];
+      }
+
+      form.errors = errors;
+      form.error = "";
+    } else {
+      form.errors = {};
+      form.error = err.message;
+    }
+  }
+}
+
+<html lang="en" class="page-admin-new" (userName: string, tomorrow: string, private form: FormState = newForm(tomorrow))>
+  <head>
+    <title>New shift · Rostergrove coordinator</title>
+    <meta name="description" content="Create a volunteer shift.">
+  </head>
+  <body>
+    <Layout active="new" role="coordinator" {userName} width="is-form">
+      <div class="stack is-xl">
+        <div class="stack is-xs">
+          <h1>New shift</h1>
+          <p class="lede">One-off, or the same slot every week.</p>
+        </div>
+
+        <form class="card" onsubmit={() => onSubmit(form)}>
+          <div class="card-body stack is-lg">
+            <p e:if={form.error} class="callout is-danger" role="alert">{form.error}</p>
+
+            <div class="field">
+              <label>Shift type</label>
+              <div class="kind-choice">
+                <label e:for={kind of KINDS}>
+                  <input type="radio" name="kind" checked={form.values.kind === kind} onchange={() => pickKind(form, kind)}>
+                  {KIND_LABELS[kind]}
+                </label>
+              </div>
+            </div>
+
+            <div class="fields">
+              <div class="field is-full">
+                <label for="date">Date</label>
+                <input id="date" type="date" value={form.values.date} min={tomorrow} class={[form.errors.date && "is-error"]} required>
+                <p e:if={form.errors.date} class="error">{form.errors.date}</p>
+              </div>
+
+              <div class="field">
+                <label for="start">Starts</label>
+                <input id="start" type="time" value={form.values.startTime} step={900} class={[form.errors.startTime && "is-error"]} required>
+                <p e:if={form.errors.startTime} class="error">{form.errors.startTime}</p>
+              </div>
+
+              <div class="field">
+                <label for="end">Ends</label>
+                <input id="end" type="time" value={form.values.endTime} step={900} class={[form.errors.endTime && "is-error"]} required>
+                <p e:if={form.errors.endTime} class="error">{form.errors.endTime}</p>
+              </div>
+
+              <div class="field is-full">
+                <label for="location">Location</label>
+                <input id="location" value={form.values.location} class={[form.errors.location && "is-error"]} required>
+                <p e:if={form.errors.location} class="error">{form.errors.location}</p>
+              </div>
+
+              <div class="field">
+                <label for="capacity">Volunteers needed</label>
+                <input id="capacity" type="number" min={1} max={100} value={form.values.capacity} class={[form.errors.capacity && "is-error"]} required>
+                <p e:if={form.errors.capacity} class="error">{form.errors.capacity}</p>
+              </div>
+            </div>
+
+            <div class="repeat">
+              <label>
+                <input type="checkbox" checked={form.repeat}>
+                Repeat weekly
+              </label>
+
+              <div e:if={form.repeat} class="row">
+                <span>For</span>
+                <input type="number" min={2} max={MAX_WEEKS} value={form.values.weeks} aria-label="Number of weeks"
+                       class={[form.errors.weeks && "is-error"]}>
+                <span>weeks</span>
+              </div>
+              <p e:if={form.errors.weeks} class="error">{form.errors.weeks}</p>
+              <p class="preview">{preview(form)}</p>
+            </div>
+          </div>
+
+          <div class="card-foot">
+            <a class="button is-ghost" href="/admin">Cancel</a>
+            <button type="submit" class={["is-primary", form.busy && "is-loading"]} disabled={form.busy}>
+              {form.repeat ? `Create ${form.values.weeks} shifts` : "Create shift"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Layout>
+  </body>
+</html>

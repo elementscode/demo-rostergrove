@@ -1,0 +1,47 @@
+.kind-pill {
+  gap: var(--space-1-5, 0.375rem);
+}
+
+.spots {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 8rem;
+}
+
+.spots-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.spots.is-short .spots-label {
+  color: var(--warning-ink);
+}
+
+.spots.is-full .spots-label {
+  color: var(--ink-soft);
+}
+
+.spots-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+}
+
+.spots-bar span {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--bg-muted);
+  box-shadow: inset 0 0 0 1px var(--rule-soft);
+  transition: background-color 240ms ease;
+}
+
+.spots-bar span.is-filled {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.spots.is-short .spots-bar span.is-filled {
+  background: var(--warning);
+}
