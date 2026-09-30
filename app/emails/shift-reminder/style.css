@@ -1,0 +1,22 @@
+@import "#app/shared/styles/email.css";
+
+.email.shift-reminder .when {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.email.shift-reminder .details {
+  padding: 16px 20px;
+  border-left: 3px solid #1f7a45;
+  background: #f1f8f3;
+}
+
+.email.shift-reminder .details p {
+  margin: 0 0 4px;
+}
+
+.email.shift-reminder .muted {
+  color: #5b6570;
+  font-size: 14px;
+}

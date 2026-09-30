@@ -1,0 +1,25 @@
+import "./style.css";
+import { ShiftKind, KIND_LABELS } from "#app/shared/lib/format";
+import { ShiftCounts, spotsLabel } from "#app/shared/lib/roster";
+
+const KIND_INTENT: Record<ShiftKind, string> = {
+  sorting: "is-info",
+  packing: "is-success",
+  delivery: "is-warning",
+};
+
+<KindPill (kind: ShiftKind)>
+  <span class={["pill kind-pill", KIND_INTENT[kind]]}>
+    <span class="pill-dot"></span>
+    {KIND_LABELS[kind]}
+  </span>
+</KindPill>
+
+<Spots (counts: ShiftCounts, capacity: number, short: boolean = false, done: boolean = false)>
+  <div class={["spots", short && counts.left > 0 && "is-short", counts.left === 0 && "is-full"]}>
+    <span class="spots-label">{done ? `${counts.confirmed} of ${capacity} filled` : spotsLabel(counts)}</span>
+    <span class="spots-bar" aria-hidden="true">
+      <span e:for={i of Array.from({ length: capacity }, (_, n) => n)} class={[i < counts.confirmed && "is-filled"]}></span>
+    </span>
+  </div>
+</Spots>

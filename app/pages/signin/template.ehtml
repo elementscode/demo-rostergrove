@@ -1,0 +1,96 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import { signin } from "#app/shared/services/auth";
+import { AuthShell } from "#app/shared/templates/auth-shell";
+
+export interface DemoLogin {
+  name: string;
+  email: string;
+  role: "volunteer" | "coordinator";
+}
+
+interface SigninForm {
+  email: string;
+  password: string;
+  error: string;
+  busy: boolean;
+}
+
+export const DEMO_PASSWORDS = { volunteer: "volunteer", coordinator: "coordinator" };
+
+function onSubmit(form: SigninForm) {
+  form.busy = true;
+
+  try {
+    let role = signin(form.email, form.password);
+    form.error = "";
+    redirect(role === "coordinator" ? "/admin" : "/");
+  } catch (err: any) {
+    form.error = err.message;
+    form.busy = false;
+  }
+}
+
+function useDemo(form: SigninForm, login: DemoLogin) {
+  form.email = login.email;
+  form.password = DEMO_PASSWORDS[login.role];
+  onSubmit(form);
+}
+
+<html lang="en" class="page-signin" (
+  demoLogins: DemoLogin[],
+  private form: SigninForm = { email: "", password: "", error: "", busy: false },
+)>
+  <head>
+    <title>Sign in · Rostergrove</title>
+    <meta name="description" content="Sign in to pick up volunteer shifts at the Grove Street Food Bank.">
+  </head>
+  <body>
+    <AuthShell title="Welcome back" lede="Sign in to see this week's shifts.">
+      <form class="stack" onsubmit={() => onSubmit(form)}>
+        <p e:if={form.error} class="error" role="alert">{form.error}</p>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" value={form.email}
+                 autocomplete="email" autocapitalize="none" spellcheck={false}
+                 placeholder="you@example.org" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" value={form.password}
+                 autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Sign in</button>
+
+        <p class="hint">New here? <a href="/signup">Sign up to volunteer</a></p>
+      </form>
+
+      <section e:if={demoLogins.length > 0} class="card demo-logins" aria-labelledby="demo-title">
+        <div class="card-body stack is-sm">
+          <div class="demo-head">
+            <h2 id="demo-title">Demo logins</h2>
+            <p class="password-note">Tap one to sign in</p>
+          </div>
+
+          <ul class="demo-list">
+            <li e:for={login of demoLogins} class={[login.role === "coordinator" && "is-wide"]}>
+              <button type="button" class={["demo-login is-ghost", login.role === "coordinator" && "is-coordinator"]}
+                      onclick={() => useDemo(form, login)}>
+                <span>{login.name}</span>
+                <small e:if={login.role === "coordinator"}>Coordinator · {login.email}</small>
+                <small e:else>{login.email}</small>
+              </button>
+            </li>
+          </ul>
+
+          <p class="password-note">
+            Passwords: <code>{DEMO_PASSWORDS.coordinator}</code> for the coordinator, <code>{DEMO_PASSWORDS.volunteer}</code> for every volunteer.
+          </p>
+        </div>
+      </section>
+    </AuthShell>
+  </body>
+</html>
