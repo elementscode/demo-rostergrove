@@ -30,7 +30,7 @@ Rostergrove needed shifts with spots that count down as volunteers sign up, wait
 ### What Elements gave the app
 
 - **Live spots and rosters.** `shifts`, `signups` and `roster` are LiveTables in `app/shared/services/shifts.ts`. A volunteer's page shows spots left the moment someone signs up, and the coordinator's roster, with names and phone numbers, fills in and checks off as people arrive.
-- **Waitlists that move people up.** `joinShift` and `leaveShift` lock the shift row first, so two volunteers can never both take the last spot. A full shift puts the next volunteer on the waitlist, and when someone with a spot leaves, `fillOpenSpots` confirms whoever has waited longest.
+- **Waitlists that move people up.** `joinShift` and `leaveShift` lock the shift row first, so the last spot goes to exactly one volunteer. A full shift puts the next volunteer on the waitlist, and when someone with a spot leaves, `fillOpenSpots` confirms whoever has waited longest.
 - **Day-before reminders.** One line in `index.ts` runs `SendShiftRemindersJob` every hour. It emails the `shift-reminder` template to each confirmed volunteer on tomorrow's shifts, in the food bank's time zone, and marks each signup as it sends.
 - **Weekly shifts and hours.** `createShifts` adds one shift or the same shift every week for up to the chosen number of weeks, sharing a series id, and `/admin/hours.csv` exports each volunteer's checked-in hours for the year.
 - **Server calls as function calls.** Pages call `@rpc` functions such as `joinShift`, `setCheckIn`, `cancelShift` and `removeSignup` straight from the template.
