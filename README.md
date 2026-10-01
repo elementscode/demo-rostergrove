@@ -23,6 +23,25 @@ app.
 elements create rostergrove -scaffold=elementscode/demo-rostergrove
 ```
 
+## How it's built
+
+Rostergrove needed shifts with spots that count down as volunteers sign up, waitlists that move people up, day-before reminders, check-in and an hours report for the coordinator. Each of those is a part of Elements, so the agent spent its 18 minutes on the food bank's roster itself.
+
+### What Elements gave the app
+
+- **Live spots and rosters.** `shifts`, `signups` and `roster` are LiveTables in `app/shared/services/shifts.ts`. A volunteer's page shows spots left the moment someone signs up, and the coordinator's roster, with names and phone numbers, fills in and checks off as people arrive.
+- **Waitlists that move people up.** `joinShift` and `leaveShift` lock the shift row first, so two volunteers can never both take the last spot. A full shift puts the next volunteer on the waitlist, and when someone with a spot leaves, `fillOpenSpots` confirms whoever has waited longest.
+- **Day-before reminders.** One line in `index.ts` runs `SendShiftRemindersJob` every hour. It emails the `shift-reminder` template to each confirmed volunteer on tomorrow's shifts, in the food bank's time zone, and marks each signup as it sends.
+- **Weekly shifts and hours.** `createShifts` adds one shift or the same shift every week for up to the chosen number of weeks, sharing a series id, and `/admin/hours.csv` exports each volunteer's checked-in hours for the year.
+- **Server calls as function calls.** Pages call `@rpc` functions such as `joinShift`, `setCheckIn`, `cancelShift` and `removeSignup` straight from the template.
+- **Data and roles from SQL.** Two migrations define the roster and seed one coordinator, fifteen volunteers, sixteen weeks of past shifts with hours served and two weeks of upcoming shifts with signups. `coordinatorOrThrow` in `app/shared/services/auth.ts` gives coordinators check-in and the admin pages.
+
+### What the agent got from the tooling
+
+The agent ran 33 builds in 18 minutes. By the build's own timer, the median build finished in 37 milliseconds, so it checked its work after each edit and kept going. Along the way the build caught errors such as an async call at the top level of a module, with a message that said where to move it, and a date that could be null passed where a boolean belonged. The agent read 37 manual pages as it reached each part, from `livetable/partitions` and `jobs/cron` to `recipes/admin-roles`, then wrote 31 tests and checked its pages at phone width in a real browser.
+
+Start in `app/shared/services/shifts.ts`.
+
 ## Demo accounts
 
 The seed creates a food bank's weekly schedule of sorting, packing and delivery
