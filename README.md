@@ -38,7 +38,7 @@ Rostergrove needed shifts with spots that count down as volunteers sign up, wait
 
 ### What the agent got from the tooling
 
-The agent ran 33 builds in 18 minutes. By the build's own timer, the median build finished in 37 milliseconds, so it checked its work after each edit and kept going. Along the way the build caught errors such as an async call at the top level of a module, with a message that said where to move it, and a date that could be null passed where a boolean belonged. The agent read 37 manual pages as it reached each part, from `livetable/partitions` and `jobs/cron` to `recipes/admin-roles`, then wrote 31 tests and checked its pages at phone width in a real browser.
+The agent ran 33 builds in 18 minutes, checking its work after each edit and moving straight on. Along the way the build caught errors such as an async call at the top level of a module, with a message that said where to move it, and a date that could be null passed where a boolean belonged. The agent read 37 manual pages as it reached each part, from `livetable/partitions` and `jobs/cron` to `recipes/admin-roles`, then wrote 31 tests and checked its pages at phone width in a real browser.
 
 Start in `app/shared/services/shifts.ts`.
 
