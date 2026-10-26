@@ -1,30 +1,16 @@
-![Rostergrove, a volunteer shift signup app built with Elements: the coordinator's two-week schedule with full shifts, waitlists and short-staffed shifts highlighted.](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92/poster?v=ed1666d09742)
+![Volunteer shift signup with waitlists, built by Claude Code on Elements: the coordinator's two-week schedule with full shifts, waitlists and short-staffed shifts highlighted.](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92/poster?v=ed1666d09742)
 
-# Rostergrove
+# Volunteer shift signup with waitlists, built by Claude Code on Elements
 
-> A demo app built with [Elements](https://elements.dev).
+> Rostergrove is a full-stack app built with Claude Code on Elements.
 
 Volunteers pick up shifts with live spots left, waitlists and day-before reminders; coordinators set weekly shifts, check people in and export hours.
 
-**Demo:** [Rostergrove](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92)
-
-## Agent specs
-
-- **Agent:** Claude Code, Opus 5.5 Medium
-- **Time:** 18 min
-- **Cost:** $5.88 at API rates, September 2026
-
-## Get started
-
-```bash
-elements create rostergrove -scaffold=elementscode/demo-rostergrove
-```
+[Run this app on your machine](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
 
 Rostergrove needed shifts with spots that count down as volunteers sign up, waitlists that move people up, day-before reminders, check-in and an hours report for the coordinator. Each of those is a part of Elements, so the agent spent its 18 minutes on the food bank's roster itself.
-
-### What Elements gave the app
 
 - **Live spots and rosters.** Shifts, signups and the coordinator's roster are LiveTables. Spots left change the moment someone signs up, and the roster fills in and checks off as people arrive.
 
@@ -38,37 +24,6 @@ Rostergrove needed shifts with spots that count down as volunteers sign up, wait
 
 - **Data and roles from SQL.** Migrations define the roster and seed one coordinator, fifteen volunteers, sixteen weeks of past shifts with hours served and two weeks of upcoming shifts with signups. Sessions and roles give coordinators check-in and the admin pages.
 
-### What the project server gave the agent
+## Why Elements
 
-The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
-
-### What shipped
-
-The app type-checks with zero errors and all 31 tests pass. Every page works on desktop and phone.
-
-## Demo accounts
-
-The seed creates a food bank's weekly schedule of sorting, packing and delivery
-driver shifts: sixteen weeks of past shifts with checked-in hours, and the next
-two weeks with signups, where some shifts are full with a waitlist and some are
-short of volunteers. The sign-in page lists every account; tap one to sign in.
-
-| Email                       | Role        | Password      |
-| --------------------------- | ----------- | ------------- |
-| coordinator@rostergrove.org | coordinator | `coordinator` |
-| maya@example.org            | volunteer   | `volunteer`   |
-| luis@example.org            | volunteer   | `volunteer`   |
-| priya@example.org           | volunteer   | `volunteer`   |
-
-Twelve more volunteers (tom, aisha, ben, grace, sam, rosa, kwame, hannah,
-diego, ellie, marcus and nora, all `@example.org`) share the `volunteer`
-password.
-
-Reminder emails go to the log in development. To send tomorrow's reminders
-now, run `elements run scripts/send-reminders.ts`.
-
-**Demo:** [Rostergrove](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Elements is an integrated full-stack app framework and a project server. The project server checks the agent's work as it builds: it type-checks the server and browser code, analyzes the program, applies migrations and runs the tests, then reports the results to the agent. A security mistake, such as calling a server-only function from the browser, is a compile error. The agent reads the report and fixes its own mistakes before it tells you a feature is done. The same checks run on every feature you ask for next.
