@@ -113,7 +113,7 @@ function onSubmit(form: FormState) {
               <Alert e:if={form.error} variant="danger" description={form.error} />
 
               <Field label="Shift type" reserveError={false}>
-                <RadioGroup value={form.values.kind} orientation="horizontal" class="kind-choice"
+                <RadioGroup value={form.values.kind} class="kind-choice"
                             onValueChange={(value) => pickKind(form, value as ShiftKind)}>
                   <Label e:for={kind of KINDS}>
                     <RadioGroupItem value={kind} />
