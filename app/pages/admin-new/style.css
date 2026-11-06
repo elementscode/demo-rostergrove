@@ -16,21 +16,6 @@
   gap: var(--space-2);
 }
 
-.page-admin-new .kind-choice label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.page-admin-new .kind-choice label:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
 .page-admin-new .fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -6,7 +6,7 @@ import { KINDS, KIND_LABELS, ShiftKind, formatDay, zonedMoment } from "#app/shar
 import { Button } from "@elements/ui/button";
 import { Card, CardContent, CardFooter } from "@elements/ui/card";
 import { Alert } from "@elements/ui/alert";
-import { Field } from "@elements/ui/field";
+import { Field, FieldSet, FieldLegend, FieldLabel, FieldContent, FieldTitle } from "@elements/ui/field";
 import { Input } from "@elements/ui/input";
 import { NumberInput } from "@elements/ui/number-input";
 import { DatePicker } from "@elements/ui/date-picker";
@@ -112,15 +112,20 @@ function onSubmit(form: FormState) {
             <CardContent class="stack is-lg">
               <Alert e:if={form.error} variant="danger" description={form.error} />
 
-              <Field label="Shift type" reserveError={false}>
+              <FieldSet>
+                <FieldLegend variant="label">Shift type</FieldLegend>
                 <RadioGroup value={form.values.kind} class="kind-choice"
                             onValueChange={(value) => pickKind(form, value as ShiftKind)}>
-                  <Label e:for={kind of KINDS}>
-                    <RadioGroupItem value={kind} />
-                    {KIND_LABELS[kind]}
-                  </Label>
+                  <FieldLabel e:for={kind of KINDS}>
+                    <Field orientation="horizontal" reserveError={false}>
+                      <RadioGroupItem value={kind} />
+                      <FieldContent>
+                        <FieldTitle>{KIND_LABELS[kind]}</FieldTitle>
+                      </FieldContent>
+                    </Field>
+                  </FieldLabel>
                 </RadioGroup>
-              </Field>
+              </FieldSet>
 
               <div class="fields">
                 <Field label="Date" error={form.errors.date ?? ""} class="is-full">
