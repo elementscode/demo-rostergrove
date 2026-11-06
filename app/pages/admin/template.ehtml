@@ -5,6 +5,11 @@ import { KindPill, Spots } from "#app/shared/templates/shift-bits";
 import { Shift, Signup } from "#app/shared/services/shifts";
 import { dayKey, relativeDay, formatShortDay, formatTimeRange } from "#app/shared/lib/format";
 import { countsFor, ShiftCounts } from "#app/shared/lib/roster";
+import { Button } from "@elements/ui/button";
+import { Badge } from "@elements/ui/badge";
+import { Table, TableHead, TableCell } from "@elements/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@elements/ui/toggle-group";
+import { Empty } from "@elements/ui/empty";
 
 interface Row {
   id: string;
@@ -61,6 +66,17 @@ function upcomingCount(shifts: LiveView<Shift>): number {
   return shifts.filter((s) => +s.endsAt > now).length;
 }
 
+/** A view stays chosen: pressing the active one again does not clear it. */
+function pickView(ui: Ui, value: string, details: { cancel(): void }) {
+  if (!value) {
+    details.cancel();
+
+    return;
+  }
+
+  ui.view = value as Ui["view"];
+}
+
 /** "Needs 3 in 20h" reads as urgent; a shift a week out just "Needs 3". */
 function needLabel(row: Row): string {
   let hours = (+row.shift.startsAt - Date.now()) / 3_600_000;
@@ -90,8 +106,8 @@ function needLabel(row: Row): string {
           </div>
 
           <div class="cluster is-sm">
-            <a class="button" href="/admin/hours.csv" download>Export hours (CSV)</a>
-            <a class="button is-primary" href="/admin/new">New shift</a>
+            <Button href="/admin/hours.csv" attrs={{ download: true }}>Export hours (CSV)</Button>
+            <Button href="/admin/new" variant="primary">New shift</Button>
           </div>
         </div>
 
@@ -117,23 +133,24 @@ function needLabel(row: Row): string {
         <div class="stack is-md">
           <div class="toolbar">
             <h2>Schedule</h2>
-            <div class="segmented" role="group" aria-label="Show">
-              <button type="button" class={["is-sm", ui.view === "all" && "is-active"]} onclick={() => ui.view = "all"}>All shifts</button>
-              <button type="button" class={["is-sm", ui.view === "short" && "is-active"]} onclick={() => ui.view = "short"}>Short only</button>
-            </div>
+            <ToggleGroup type="single" value={ui.view} variant="outline" size="sm" spacing={0} label="Show"
+                         onValueChange={(value, details) => pickView(ui, value, details)}>
+              <ToggleGroupItem value="all">All shifts</ToggleGroupItem>
+              <ToggleGroupItem value="short">Short only</ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
-          <div class="table-wrap">
+          <Table label="Schedule" class="schedule">
             <table>
               <thead>
                 <tr>
-                  <th>Day</th>
-                  <th>Time</th>
-                  <th>Type</th>
-                  <th class="col-where">Location</th>
-                  <th>Filled</th>
-                  <th>Status</th>
-                  <th><span class="sr-only">Roster</span></th>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead class="col-where">Location</TableHead>
+                  <TableHead>Filled</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead><span class="sr-only">Roster</span></TableHead>
                 </tr>
               </thead>
               <tbody>
@@ -146,27 +163,29 @@ function needLabel(row: Row): string {
                     </span>
                   </td>
                   <td class="cell-time">{formatTimeRange(row.shift.startsAt, row.shift.endsAt)}</td>
-                  <td><KindPill kind={row.shift.kind} /></td>
+                  <td class="cell-kind"><KindPill kind={row.shift.kind} /></td>
                   <td class="cell-where" title={row.shift.location}>{row.shift.location}</td>
                   <td class="cell-need">
                     <Spots counts={row.counts} capacity={row.shift.capacity} short={row.short} done={row.past} />
                   </td>
-                  <td>
-                    <span e:if={row.past} class="pill">Done</span>
-                    <span e:elseif={row.short} class="pill is-warning"><span class="pill-dot"></span>{needLabel(row)}</span>
-                    <span e:elseif={row.counts.waitlist > 0} class="pill is-success">Full · {row.counts.waitlist} waiting</span>
-                    <span e:else class="pill is-success">Full</span>
+                  <td class="cell-status">
+                    <Badge e:if={row.past} variant="secondary">Done</Badge>
+                    <Badge e:elseif={row.short} variant="warning" dot>{needLabel(row)}</Badge>
+                    <Badge e:elseif={row.counts.waitlist > 0} variant="success">Full · {row.counts.waitlist} waiting</Badge>
+                    <Badge e:else variant="success">Full</Badge>
                   </td>
-                  <td class="cell-actions">
-                    <a class="button is-sm is-ghost" href={`/admin/shifts/${row.shift.id}`}>Roster →</a>
-                  </td>
+                  <TableCell align="end" class="cell-actions">
+                    <Button href={`/admin/shifts/${row.shift.id}`} variant="ghost" size="sm">Roster →</Button>
+                  </TableCell>
                 </tr>
                 <tr e:if={rows(shifts, signups, ui.view).length === 0} class="empty-row">
-                  <td colspan={7}>{ui.view === "short" ? "Every upcoming shift is fully staffed." : "No upcoming shifts. Create one to get started."}</td>
+                  <TableCell colspan={7}>
+                    <Empty description={ui.view === "short" ? "Every upcoming shift is fully staffed." : "No upcoming shifts. Create one to get started."} />
+                  </TableCell>
                 </tr>
               </tbody>
             </table>
-          </div>
+          </Table>
         </div>
       </div>
     </Layout>
