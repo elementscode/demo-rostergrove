@@ -5,6 +5,14 @@ import { KindPill, Spots } from "#app/shared/templates/shift-bits";
 import { Shift, RosterEntry, setCheckIn, removeSignup, cancelShift } from "#app/shared/services/shifts";
 import { KIND_LABELS, dayKey, formatDay, formatTime, formatTimeRange } from "#app/shared/lib/format";
 import { countsFor, waitlistFor } from "#app/shared/lib/roster";
+import { Button } from "@elements/ui/button";
+import { Card, CardHeader, CardTitle, CardAction } from "@elements/ui/card";
+import { Alert } from "@elements/ui/alert";
+import { Avatar } from "@elements/ui/avatar";
+import { Checkbox } from "@elements/ui/checkbox";
+import { Label } from "@elements/ui/label";
+import { Empty } from "@elements/ui/empty";
+import { AlertDialog, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@elements/ui/alert-dialog";
 
 interface Ui {
   error: string;
@@ -30,10 +38,6 @@ function checkedIn(roster: LiveView<RosterEntry>): number {
   return roster.filter((r) => r.status === "confirmed" && r.checkedInAt !== null).length;
 }
 
-function initials(name: string): string {
-  return name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-}
-
 function formatPhone(phone: string): string {
   let d = phone.replace(/\D/g, "");
 
@@ -54,10 +58,6 @@ function onCheckIn(ui: Ui, entry: RosterEntry, checked: boolean) {
 }
 
 function onRemove(ui: Ui, entry: RosterEntry) {
-  if (!confirm(`Take ${entry.name} off this shift?`)) {
-    return;
-  }
-
   try {
     removeSignup(entry.id);
     ui.error = "";
@@ -67,10 +67,6 @@ function onRemove(ui: Ui, entry: RosterEntry) {
 }
 
 function onCancel(ui: Ui, shift: Shift) {
-  if (!confirm("Cancel this shift? Everyone signed up comes off it.")) {
-    return;
-  }
-
   try {
     cancelShift(shift.id);
     redirect("/admin");
@@ -109,17 +105,17 @@ function onCancel(ui: Ui, shift: Shift) {
           </div>
         </div>
 
-        <p e:if={ui.error} class="callout is-danger" role="alert">{ui.error}</p>
+        <Alert e:if={ui.error} variant="danger" description={ui.error} />
 
-        <section class="card">
-          <div class="card-head row" style="justify-content: space-between">
-            <h2>Roster</h2>
-            <span e:if={!isShiftDay(shift)} class="hint">Check-in opens on {formatDay(shift.startsAt)}</span>
-          </div>
+        <Card attrs={{ role: "region", "aria-label": "Roster" }}>
+          <CardHeader>
+            <CardTitle level={2}>Roster</CardTitle>
+            <CardAction e:if={!isShiftDay(shift)}><span class="hint">Check-in opens on {formatDay(shift.startsAt)}</span></CardAction>
+          </CardHeader>
 
           <ul e:if={confirmed(roster).length > 0 || openSpots(roster, shift).length > 0} class="people">
             <li e:for={entry of confirmed(roster)} class={["person", entry.checkedInAt && "is-in"]}>
-              <span class="avatar" aria-hidden="true">{initials(entry.name)}</span>
+              <Avatar alt={entry.name} attrs={{ "aria-hidden": "true" }} />
               <span class="person-who">
                 <span class="person-name">{entry.name}</span>
                 <span class="person-contact">
@@ -127,28 +123,27 @@ function onCancel(ui: Ui, shift: Shift) {
                 </span>
               </span>
 
-              <label e:if={isShiftDay(shift)} class="checkin">
-                <input type="checkbox" checked={!!entry.checkedInAt}
-                       onchange={(e: Event) => onCheckIn(ui, entry, (e.target as HTMLInputElement).checked)}>
+              <Label e:if={isShiftDay(shift)} class="checkin">
+                <Checkbox checked={!!entry.checkedInAt} onCheckedChange={(checked) => onCheckIn(ui, entry, checked)} />
                 <span e:if={entry.checkedInAt} class="checkin-time">In at {formatTime(entry.checkedInAt!)}</span>
                 <span e:else>Check in</span>
-              </label>
+              </Label>
               <span e:else></span>
 
-              <button type="button" class="is-ghost is-sm remove" onclick={() => onRemove(ui, entry)}>Remove</button>
+              <RemoveButton {ui} {entry} />
             </li>
 
             <li e:for={i of openSpots(roster, shift)} class="open-spot">
-              <span class="avatar" aria-hidden="true">+</span>
+              <Avatar fallback="+" attrs={{ "aria-hidden": "true" }} />
               <span>Open spot</span>
             </li>
           </ul>
-        </section>
+        </Card>
 
-        <section class="card">
-          <div class="card-head">
-            <h2>Waitlist</h2>
-          </div>
+        <Card attrs={{ role: "region", "aria-label": "Waitlist" }}>
+          <CardHeader>
+            <CardTitle level={2}>Waitlist</CardTitle>
+          </CardHeader>
 
           <ol e:if={waitlistFor(roster, shift.id).length > 0} class="people">
             <li e:for={entry of waitlistFor(roster, shift.id)} class="person">
@@ -160,17 +155,33 @@ function onCancel(ui: Ui, shift: Shift) {
                 </span>
               </span>
               <span class="hint">Moves up if a spot opens</span>
-              <button type="button" class="is-ghost is-sm remove" onclick={() => onRemove(ui, entry)}>Remove</button>
+              <RemoveButton {ui} {entry} />
             </li>
           </ol>
-          <p e:else class="people-empty">Nobody waiting.</p>
-        </section>
+          <Empty e:else class="people-empty" description="Nobody waiting." />
+        </Card>
 
         <div e:if={+shift.startsAt > Date.now()} class="danger-zone">
           <span>Plans changed? Cancelling removes the shift and everyone's signup.</span>
-          <button type="button" class="is-danger is-ghost is-sm" onclick={() => onCancel(ui, shift)}>Cancel shift</button>
+          <AlertDialog title="Cancel this shift?" description="Everyone signed up comes off it." size="sm">
+            <Button slot="trigger" variant="danger" size="sm">Cancel shift</Button>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep shift</AlertDialogCancel>
+              <AlertDialogAction variant="danger" onclick={() => onCancel(ui, shift)}>Cancel shift</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialog>
         </div>
       </div>
     </Layout>
   </body>
 </html>
+
+<RemoveButton (ui: Ui, entry: RosterEntry)>
+  <AlertDialog title={`Take ${entry.name} off this shift?`} size="sm">
+    <Button slot="trigger" variant="ghost" size="sm" class="remove">Remove</Button>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction variant="danger" onclick={() => onRemove(ui, entry)}>Remove</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialog>
+</RemoveButton>

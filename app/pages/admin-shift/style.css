@@ -71,21 +71,14 @@
   background: color-mix(in oklab, var(--success-soft) 60%, var(--bg));
 }
 
-.page-admin-shift .avatar {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
+.page-admin-shift .avatar-fallback {
   background: var(--accent-soft);
   color: var(--accent-deep);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
 }
 
-.page-admin-shift .person.is-in .avatar {
+.page-admin-shift .person.is-in .avatar-fallback {
   background: var(--success);
-  color: #fff;
+  color: var(--bg);
 }
 
 .page-admin-shift .person-who {
@@ -113,10 +106,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
   white-space: nowrap;
-  cursor: pointer;
 }
 
 .page-admin-shift .checkin-time {
@@ -134,16 +124,10 @@
   font-size: var(--text-sm);
 }
 
-.page-admin-shift .open-spot .avatar {
+.page-admin-shift .open-spot .avatar-fallback {
   background: transparent;
   border: 1px dashed var(--warning-edge);
   color: var(--warning-ink);
-}
-
-.page-admin-shift .people-empty {
-  margin: 0;
-  padding: var(--space-6) var(--space-5);
-  color: var(--ink-soft);
 }
 
 .page-admin-shift .position {
