@@ -201,8 +201,7 @@ function onLeave(ui: Ui, shift: Shift, signup: Signup) {
                     </span>
                   </li>
                 </ul>
-                <Empty e:else class="mine-empty"
-                       description="You haven't signed up for anything yet. Every shift on the left with a spot open is yours to take." />
+                <Empty e:else description="You haven't signed up for anything yet. Every shift on the left with a spot open is yours to take." />
               </CardContent>
             </Card>
           </aside>
