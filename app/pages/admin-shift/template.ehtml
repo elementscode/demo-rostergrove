@@ -107,59 +107,63 @@ function onCancel(ui: Ui, shift: Shift) {
 
         <Alert e:if={ui.error} variant="danger" description={ui.error} />
 
-        <Card attrs={{ role: "region", "aria-label": "Roster" }}>
-          <CardHeader>
-            <CardTitle level={2}>Roster</CardTitle>
-            <CardAction e:if={!isShiftDay(shift)}><span class="hint">Check-in opens on {formatDay(shift.startsAt)}</span></CardAction>
-          </CardHeader>
+        <section aria-labelledby="roster-title">
+          <Card>
+            <CardHeader>
+              <CardTitle level={2} id="roster-title">Roster</CardTitle>
+              <CardAction e:if={!isShiftDay(shift)}><span class="hint">Check-in opens on {formatDay(shift.startsAt)}</span></CardAction>
+            </CardHeader>
 
-          <ul e:if={confirmed(roster).length > 0 || openSpots(roster, shift).length > 0} class="people">
-            <li e:for={entry of confirmed(roster)} class={["person", entry.checkedInAt && "is-in"]}>
-              <Avatar alt={entry.name} attrs={{ "aria-hidden": "true" }} />
-              <span class="person-who">
-                <span class="person-name">{entry.name}</span>
-                <span class="person-contact">
-                  <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+            <ul e:if={confirmed(roster).length > 0 || openSpots(roster, shift).length > 0} class="people">
+              <li e:for={entry of confirmed(roster)} class={["person", entry.checkedInAt && "is-in"]}>
+                <Avatar alt={entry.name} attrs={{ "aria-hidden": "true" }} />
+                <span class="person-who">
+                  <span class="person-name">{entry.name}</span>
+                  <span class="person-contact">
+                    <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+                  </span>
                 </span>
-              </span>
 
-              <Label e:if={isShiftDay(shift)} class="checkin">
-                <Checkbox checked={!!entry.checkedInAt} onCheckedChange={(checked) => onCheckIn(ui, entry, checked)} />
-                <span e:if={entry.checkedInAt} class="checkin-time">In at {formatTime(entry.checkedInAt!)}</span>
-                <span e:else>Check in</span>
-              </Label>
-              <span e:else></span>
+                <Label e:if={isShiftDay(shift)} class="checkin">
+                  <Checkbox checked={!!entry.checkedInAt} onCheckedChange={(checked) => onCheckIn(ui, entry, checked)} />
+                  <span e:if={entry.checkedInAt} class="checkin-time">In at {formatTime(entry.checkedInAt!)}</span>
+                  <span e:else>Check in</span>
+                </Label>
+                <span e:else></span>
 
-              <RemoveButton {ui} {entry} />
-            </li>
+                <RemoveButton {ui} {entry} />
+              </li>
 
-            <li e:for={i of openSpots(roster, shift)} class="open-spot">
-              <Avatar fallback="+" attrs={{ "aria-hidden": "true" }} />
-              <span>Open spot</span>
-            </li>
-          </ul>
-        </Card>
+              <li e:for={i of openSpots(roster, shift)} class="open-spot">
+                <Avatar fallback="+" attrs={{ "aria-hidden": "true" }} />
+                <span>Open spot</span>
+              </li>
+            </ul>
+          </Card>
+        </section>
 
-        <Card attrs={{ role: "region", "aria-label": "Waitlist" }}>
-          <CardHeader>
-            <CardTitle level={2}>Waitlist</CardTitle>
-          </CardHeader>
+        <section aria-labelledby="waitlist-title">
+          <Card>
+            <CardHeader>
+              <CardTitle level={2} id="waitlist-title">Waitlist</CardTitle>
+            </CardHeader>
 
-          <ol e:if={waitlistFor(roster, shift.id).length > 0} class="people">
-            <li e:for={entry of waitlistFor(roster, shift.id)} class="person">
-              <span class="position">{waitlistFor(roster, shift.id).indexOf(entry) + 1}</span>
-              <span class="person-who">
-                <span class="person-name">{entry.name}</span>
-                <span class="person-contact">
-                  <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+            <ol e:if={waitlistFor(roster, shift.id).length > 0} class="people">
+              <li e:for={entry of waitlistFor(roster, shift.id)} class="person">
+                <span class="position">{waitlistFor(roster, shift.id).indexOf(entry) + 1}</span>
+                <span class="person-who">
+                  <span class="person-name">{entry.name}</span>
+                  <span class="person-contact">
+                    <a href={`tel:${entry.phone}`}>{formatPhone(entry.phone)}</a> · <a href={`mailto:${entry.email}`}>{entry.email}</a>
+                  </span>
                 </span>
-              </span>
-              <span class="hint">Moves up if a spot opens</span>
-              <RemoveButton {ui} {entry} />
-            </li>
-          </ol>
-          <Empty e:else class="people-empty" description="Nobody waiting." />
-        </Card>
+                <span class="hint">Moves up if a spot opens</span>
+                <RemoveButton {ui} {entry} />
+              </li>
+            </ol>
+            <Empty e:else description="Nobody waiting." />
+          </Card>
+        </section>
 
         <div e:if={+shift.startsAt > Date.now()} class="danger-zone">
           <span>Plans changed? Cancelling removes the shift and everyone's signup.</span>
