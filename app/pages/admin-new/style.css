@@ -24,7 +24,6 @@
   padding: var(--space-3);
   border: 1px solid var(--rule);
   border-radius: var(--radius-md);
-  font-weight: var(--weight-medium);
   cursor: pointer;
 }
 
@@ -57,8 +56,8 @@
   flex-wrap: wrap;
 }
 
-.page-admin-new .repeat input[type="number"] {
-  width: 5.5rem;
+.page-admin-new .repeat .weeks {
+  width: 7rem;
 }
 
 .page-admin-new .preview {
