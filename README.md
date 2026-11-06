@@ -6,6 +6,8 @@
 
 Volunteers pick up shifts with live spots left, waitlists and day-before reminders; coordinators set weekly shifts, check people in and export hours.
 
+Rostergrove uses the `civic` theme from @elements/ui.
+
 [Run this app on your machine](https://elements.dev/demos/01a0f414-f68d-7b61-a239-9af19d397d92). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
