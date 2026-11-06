@@ -71,14 +71,14 @@
   background: color-mix(in oklab, var(--success-soft) 60%, var(--bg));
 }
 
-.page-admin-shift .avatar-fallback {
-  background: var(--accent-soft);
-  color: var(--accent-deep);
+.page-admin-shift .avatar {
+  --avatar-fallback-bg: var(--accent-soft);
+  --avatar-fallback-ink: var(--accent-deep);
 }
 
-.page-admin-shift .person.is-in .avatar-fallback {
-  background: var(--success);
-  color: var(--bg);
+.page-admin-shift .person.is-in .avatar {
+  --avatar-fallback-bg: var(--success);
+  --avatar-fallback-ink: var(--bg);
 }
 
 .page-admin-shift .person-who {
@@ -124,10 +124,13 @@
   font-size: var(--text-sm);
 }
 
+.page-admin-shift .open-spot .avatar {
+  --avatar-fallback-bg: transparent;
+  --avatar-fallback-ink: var(--warning-ink);
+}
+
 .page-admin-shift .open-spot .avatar-fallback {
-  background: transparent;
   border: 1px dashed var(--warning-edge);
-  color: var(--warning-ink);
 }
 
 .page-admin-shift .position {
