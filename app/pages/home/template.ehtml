@@ -5,16 +5,20 @@ import { KindPill, Spots } from "#app/shared/templates/shift-bits";
 import { Shift, Signup, joinShift, leaveShift } from "#app/shared/services/shifts";
 import { ShiftKind, KINDS, KIND_LABELS, dayKey, relativeDay, formatShortDay, formatTime, formatTimeRange, formatHours, hoursBetween } from "#app/shared/lib/format";
 import { countsFor, waitlistPosition } from "#app/shared/lib/roster";
+import { Button } from "@elements/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@elements/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@elements/ui/toggle-group";
+import { AlertDialog, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@elements/ui/alert-dialog";
+import { Empty } from "@elements/ui/empty";
+import { toast } from "@elements/ui/toast";
 
 interface Ui {
   filter: ShiftKind | "all";
   pending: string;
-  notice: string;
-  noticeKind: "success" | "warning" | "danger";
 }
 
 function newUi(): Ui {
-  return { filter: "all", pending: "", notice: "", noticeKind: "success" };
+  return { filter: "all", pending: "" };
 }
 
 interface Day {
@@ -77,15 +81,15 @@ function mineFor(signups: LiveView<Signup>, shiftId: string, userId: string): Si
   return signups.find((s) => s.shiftId === shiftId && s.userId === userId);
 }
 
-function show(ui: Ui, kind: Ui["noticeKind"], message: string) {
-  ui.notice = message;
-  ui.noticeKind = kind;
+/** A filter stays chosen: pressing the active one again does not clear it. */
+function pickFilter(ui: Ui, value: string, details: { cancel(): void }) {
+  if (!value) {
+    details.cancel();
 
-  setTimeout(() => {
-    if (ui.notice === message) {
-      ui.notice = "";
-    }
-  }, 4000);
+    return;
+  }
+
+  ui.filter = value as Ui["filter"];
 }
 
 function onJoin(ui: Ui, shift: Shift) {
@@ -97,31 +101,25 @@ function onJoin(ui: Ui, shift: Shift) {
     let when = `${day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day} at ${formatTime(shift.startsAt)}`;
 
     if (status === "confirmed") {
-      show(ui, "success", `You're on the ${KIND_LABELS[shift.kind].toLowerCase()} shift ${when}. We'll email a reminder the day before.`);
+      toast.success(`You're on the ${KIND_LABELS[shift.kind].toLowerCase()} shift ${when}. We'll email a reminder the day before.`);
     } else {
-      show(ui, "warning", `That shift is full, so you're on the waitlist. You'll move up if a spot opens.`);
+      toast.warning(`That shift is full, so you're on the waitlist. You'll move up if a spot opens.`);
     }
   } catch (err: any) {
-    show(ui, "danger", err.message);
+    toast.error(err.message);
   } finally {
     ui.pending = "";
   }
 }
 
 function onLeave(ui: Ui, shift: Shift, signup: Signup) {
-  let what = signup.status === "confirmed" ? "drop this shift" : "leave the waitlist";
-
-  if (!confirm(`Sure you want to ${what}?`)) {
-    return;
-  }
-
   ui.pending = shift.id;
 
   try {
     leaveShift(shift.id);
-    show(ui, "success", signup.status === "confirmed" ? "Shift dropped. Thanks for letting us know." : "You've left the waitlist.");
+    toast.success(signup.status === "confirmed" ? "Shift dropped. Thanks for letting us know." : "You've left the waitlist.");
   } catch (err: any) {
-    show(ui, "danger", err.message);
+    toast.error(err.message);
   } finally {
     ui.pending = "";
   }
@@ -149,15 +147,15 @@ function onLeave(ui: Ui, shift: Shift, signup: Signup) {
             <p class="lede">Pick up a shift. Spots update live as others sign up.</p>
           </div>
 
-          <div class="filters" role="group" aria-label="Shift type">
-            <button type="button" class={["is-sm", ui.filter === "all" && "is-active"]} onclick={() => ui.filter = "all"}>
+          <ToggleGroup type="single" value={ui.filter} variant="outline" size="sm" spacing={1} label="Shift type"
+                       class="filters" onValueChange={(value, details) => pickFilter(ui, value, details)}>
+            <ToggleGroupItem value="all">
               All <span class="filter-count">{kindCount(shifts, "all")}</span>
-            </button>
-            <button e:for={kind of KINDS} type="button" class={["is-sm", ui.filter === kind && "is-active"]}
-                    onclick={() => ui.filter = kind}>
+            </ToggleGroupItem>
+            <ToggleGroupItem e:for={kind of KINDS} value={kind}>
               {KIND_LABELS[kind]} <span class="filter-count">{kindCount(shifts, kind)}</span>
-            </button>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         <div class="home-grid">
@@ -173,28 +171,27 @@ function onLeave(ui: Ui, shift: Shift, signup: Signup) {
               </ul>
             </div>
 
-            <p e:if={upcomingDays(shifts, ui.filter).length === 0} class="empty">
-              No upcoming {ui.filter === "all" ? "" : KIND_LABELS[ui.filter].toLowerCase() + " "}shifts yet. Check back soon.
-            </p>
+            <Empty e:if={upcomingDays(shifts, ui.filter).length === 0} variant="outline"
+                   description={`No upcoming ${ui.filter === "all" ? "" : KIND_LABELS[ui.filter].toLowerCase() + " "}shifts yet. Check back soon.`} />
           </section>
 
           <aside class="home-aside stack is-lg" id="mine">
-            <div class="card hours-card">
-              <div class="card-body">
+            <Card class="hours-card">
+              <CardContent>
                 <p class="hours-eyebrow">Hours served in {year}</p>
                 <p class="hours-value">{formatHours(served.hours)} <small>{served.hours === 1 ? "hour" : "hours"}</small></p>
                 <p class="hours-sub">
                   <span e:if={served.shifts > 0}>Across {served.shifts} {served.shifts === 1 ? "shift" : "shifts"}. Thank you.</span>
                   <span e:else>Your first checked-in shift starts the count.</span>
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div class="card">
-              <div class="card-head">
-                <h2>My schedule</h2>
-              </div>
-              <div class="card-body">
+            <Card>
+              <CardHeader>
+                <CardTitle level={2}>My schedule</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ul e:if={mySchedule(shifts, signups, userId).length > 0} class="mine-list">
                   <li e:for={row of mySchedule(shifts, signups, userId)}>
                     <span class="mine-when">{relativeDay(row.shift.startsAt)} · {formatTimeRange(row.shift.startsAt, row.shift.endsAt)}</span>
@@ -204,15 +201,12 @@ function onLeave(ui: Ui, shift: Shift, signup: Signup) {
                     </span>
                   </li>
                 </ul>
-                <p e:else class="mine-empty">You haven't signed up for anything yet. Every shift on the left with a spot open is yours to take.</p>
-              </div>
-            </div>
+                <Empty e:else class="mine-empty"
+                       description="You haven't signed up for anything yet. Every shift on the left with a spot open is yours to take." />
+              </CardContent>
+            </Card>
           </aside>
         </div>
-      </div>
-
-      <div e:if={ui.notice} class="notice" role="status">
-        <div class={["callout", "is-" + ui.noticeKind]}>{ui.notice}</div>
       </div>
     </Layout>
   </body>
@@ -247,20 +241,29 @@ function onLeave(ui: Ui, shift: Shift, signup: Signup) {
 
   <div e:elseif={mine?.status === "confirmed"} class="shift-action-group">
     <span class="shift-status">You're on this shift</span>
-    <button type="button" class="is-ghost is-sm" disabled={ui.pending === shift.id}
-            onclick={() => onLeave(ui, shift, mine!)}>Drop shift</button>
+    <AlertDialog title="Sure you want to drop this shift?" size="sm">
+      <Button slot="trigger" variant="ghost" size="sm" loading={ui.pending === shift.id}>Drop shift</Button>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction variant="danger" onclick={() => onLeave(ui, shift, mine!)}>Drop shift</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialog>
   </div>
 
   <div e:elseif={mine?.status === "waitlist"} class="shift-action-group">
     <span class="shift-status is-waiting">Waitlist #{waitlistPosition(signups, shift.id, userId)}</span>
-    <button type="button" class="is-ghost is-sm" disabled={ui.pending === shift.id}
-            onclick={() => onLeave(ui, shift, mine!)}>Leave waitlist</button>
+    <AlertDialog title="Sure you want to leave the waitlist?" size="sm">
+      <Button slot="trigger" variant="ghost" size="sm" loading={ui.pending === shift.id}>Leave waitlist</Button>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction variant="danger" onclick={() => onLeave(ui, shift, mine!)}>Leave waitlist</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialog>
   </div>
 
-  <button e:elseif={countsFor(signups, shift.id, shift.capacity).left === 0} type="button"
-          class={["is-sm", ui.pending === shift.id && "is-loading"]} disabled={ui.pending === shift.id}
-          onclick={() => onJoin(ui, shift)}>Join waitlist</button>
+  <Button e:elseif={countsFor(signups, shift.id, shift.capacity).left === 0} size="sm"
+          loading={ui.pending === shift.id} onclick={() => onJoin(ui, shift)}>Join waitlist</Button>
 
-  <button e:else type="button" class={["is-primary is-sm", ui.pending === shift.id && "is-loading"]}
-          disabled={ui.pending === shift.id} onclick={() => onJoin(ui, shift)}>Sign up</button>
+  <Button e:else variant="primary" size="sm" loading={ui.pending === shift.id}
+          onclick={() => onJoin(ui, shift)}>Sign up</Button>
 </ShiftAction>

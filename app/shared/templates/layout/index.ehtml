@@ -2,6 +2,8 @@ import "./style.css";
 import { redirect } from "@elements/app";
 import { signout } from "#app/shared/services/auth";
 import { BrandMark } from "#app/shared/templates/brand-mark";
+import { Button } from "@elements/ui/button";
+import { Toaster } from "@elements/ui/toast";
 
 function onSignout() {
   signout();
@@ -27,7 +29,7 @@ function onSignout() {
 
         <div class="layout-user row is-sm">
           <span class="layout-user-name">{userName}</span>
-          <button type="button" class="is-ghost is-sm" onclick={() => onSignout()}>Sign out</button>
+          <Button variant="ghost" size="sm" onclick={() => onSignout()}>Sign out</Button>
         </div>
       </div>
     </header>
@@ -35,5 +37,7 @@ function onSignout() {
     <main class={["app-main page-shell layout-main", width]}>
       <slot/>
     </main>
+
+    <Toaster position="bottom-center" richColors />
   </div>
 </Layout>

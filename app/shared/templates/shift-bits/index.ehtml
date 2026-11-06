@@ -1,18 +1,16 @@
 import "./style.css";
+import { Badge, BadgeVariant } from "@elements/ui/badge";
 import { ShiftKind, KIND_LABELS } from "#app/shared/lib/format";
 import { ShiftCounts, spotsLabel } from "#app/shared/lib/roster";
 
-const KIND_INTENT: Record<ShiftKind, string> = {
-  sorting: "is-info",
-  packing: "is-success",
-  delivery: "is-warning",
+const KIND_INTENT: Record<ShiftKind, BadgeVariant> = {
+  sorting: "info",
+  packing: "success",
+  delivery: "warning",
 };
 
 <KindPill (kind: ShiftKind)>
-  <span class={["pill kind-pill", KIND_INTENT[kind]]}>
-    <span class="pill-dot"></span>
-    {KIND_LABELS[kind]}
-  </span>
+  <Badge variant={KIND_INTENT[kind]} dot>{KIND_LABELS[kind]}</Badge>
 </KindPill>
 
 <Spots (counts: ShiftCounts, capacity: number, short: boolean = false, done: boolean = false)>

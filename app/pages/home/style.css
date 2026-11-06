@@ -34,19 +34,7 @@
 /* Filters */
 
 .page-home .filters {
-  display: flex;
-  gap: var(--space-1);
   flex-wrap: wrap;
-}
-
-.page-home .filters button {
-  border-radius: 999px;
-}
-
-.page-home .filters button.is-active {
-  background: var(--accent-soft);
-  border-color: var(--accent-edge);
-  color: var(--accent-deep);
 }
 
 .page-home .filter-count {
@@ -157,14 +145,6 @@
   color: var(--warning-ink);
 }
 
-.page-home .empty {
-  padding: var(--space-10) var(--space-6);
-  text-align: center;
-  color: var(--ink-soft);
-  border: 1px dashed var(--rule);
-  border-radius: var(--radius-lg);
-}
-
 /* Aside */
 
 .page-home .hours-card .card-body {
@@ -234,28 +214,6 @@
   color: var(--ink-soft);
 }
 
-.page-home .mine-empty {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--ink-soft);
-}
-
-.page-home .notice {
-  position: fixed;
-  inset-inline: 0;
-  bottom: var(--space-6);
-  z-index: 40;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.page-home .notice .callout {
-  pointer-events: auto;
-  box-shadow: var(--shadow-lg);
-  max-width: min(32rem, calc(100vw - 2rem));
-}
-
 @media (max-width: 60rem) {
   .page-home .home-grid {
     grid-template-columns: 1fr;
@@ -296,20 +254,14 @@
     justify-items: stretch;
   }
 
-  .page-home .shift-action button {
+  .page-home .shift-action .button {
     width: 100%;
   }
 
-  .page-home .shift-action-group {
-  display: contents;
-}
-
-.page-home .shift-status {
+  .page-home .shift-status {
     text-align: center;
   }
-}
 
-@media (max-width: 40rem) {
   .page-home .shift .spots-bar {
     width: 7rem;
   }
