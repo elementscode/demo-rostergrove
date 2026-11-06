@@ -2,6 +2,11 @@ import "./style.css";
 import { redirect } from "@elements/app";
 import { signin } from "#app/shared/services/auth";
 import { AuthShell } from "#app/shared/templates/auth-shell";
+import { Button } from "@elements/ui/button";
+import { Alert } from "@elements/ui/alert";
+import { Field } from "@elements/ui/field";
+import { Input } from "@elements/ui/input";
+import { Card, CardContent } from "@elements/ui/card";
 
 export interface DemoLogin {
   name: string;
@@ -48,28 +53,25 @@ function useDemo(form: SigninForm, login: DemoLogin) {
   <body>
     <AuthShell title="Welcome back" lede="Sign in to see this week's shifts.">
       <form class="stack" onsubmit={() => onSubmit(form)}>
-        <p e:if={form.error} class="error" role="alert">{form.error}</p>
+        <Alert e:if={form.error} variant="danger" description={form.error} />
 
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" value={form.email}
-                 autocomplete="email" autocapitalize="none" spellcheck={false}
-                 placeholder="you@example.org" required>
-        </div>
+        <Field label="Email">
+          <Input type="email" name="email" value={form.email} placeholder="you@example.org" required
+                 attrs={{ autocomplete: "email", autocapitalize: "none", spellcheck: "false" }} />
+        </Field>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" value={form.password}
-                 autocomplete="current-password" required>
-        </div>
+        <Field label="Password">
+          <Input type="password" name="password" value={form.password} required
+                 attrs={{ autocomplete: "current-password" }} />
+        </Field>
 
-        <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Sign in</button>
+        <Button type="submit" variant="primary" block loading={form.busy}>Sign in</Button>
 
         <p class="hint">New here? <a href="/signup">Sign up to volunteer</a></p>
       </form>
 
-      <section e:if={demoLogins.length > 0} class="card demo-logins" aria-labelledby="demo-title">
-        <div class="card-body stack is-sm">
+      <Card e:if={demoLogins.length > 0} size="sm" class="demo-logins" attrs={{ role: "region", "aria-labelledby": "demo-title" }}>
+        <CardContent class="stack is-sm">
           <div class="demo-head">
             <h2 id="demo-title">Demo logins</h2>
             <p class="password-note">Tap one to sign in</p>
@@ -77,20 +79,20 @@ function useDemo(form: SigninForm, login: DemoLogin) {
 
           <ul class="demo-list">
             <li e:for={login of demoLogins} class={[login.role === "coordinator" && "is-wide"]}>
-              <button type="button" class={["demo-login is-ghost", login.role === "coordinator" && "is-coordinator"]}
+              <Button variant="ghost" class={login.role === "coordinator" ? "demo-login is-coordinator" : "demo-login"}
                       onclick={() => useDemo(form, login)}>
                 <span>{login.name}</span>
                 <small e:if={login.role === "coordinator"}>Coordinator · {login.email}</small>
                 <small e:else>{login.email}</small>
-              </button>
+              </Button>
             </li>
           </ul>
 
           <p class="password-note">
             Passwords: <code>{DEMO_PASSWORDS.coordinator}</code> for the coordinator, <code>{DEMO_PASSWORDS.volunteer}</code> for every volunteer.
           </p>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     </AuthShell>
   </body>
 </html>

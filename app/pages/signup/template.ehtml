@@ -2,6 +2,10 @@ import "./style.css";
 import { redirect, ValidationError } from "@elements/app";
 import { signup, MIN_PASSWORD, SignupForm } from "#app/shared/services/auth";
 import { AuthShell } from "#app/shared/templates/auth-shell";
+import { Button } from "@elements/ui/button";
+import { Alert } from "@elements/ui/alert";
+import { Field } from "@elements/ui/field";
+import { Input } from "@elements/ui/input";
 
 interface FormState {
   values: SignupForm;
@@ -51,42 +55,28 @@ function onSubmit(form: FormState) {
   <body>
     <AuthShell title="Sign up to volunteer" lede="It takes a minute. Then pick any shift with a spot open.">
       <form class="stack" onsubmit={() => onSubmit(form)}>
-        <p e:if={form.error} class="error" role="alert">{form.error}</p>
+        <Alert e:if={form.error} variant="danger" description={form.error} />
 
-        <div class="field">
-          <label for="name">Full name</label>
-          <input id="name" name="name" value={form.values.name} autocomplete="name"
-                 class={[form.errors.name && "is-error"]} required>
-          <p e:if={form.errors.name} class="error">{form.errors.name}</p>
-        </div>
+        <Field label="Full name" error={form.errors.name ?? ""}>
+          <Input name="name" value={form.values.name} required attrs={{ autocomplete: "name" }} />
+        </Field>
 
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" value={form.values.email}
-                 autocomplete="email" autocapitalize="none" spellcheck={false}
-                 placeholder="you@example.org" class={[form.errors.email && "is-error"]} required>
-          <p e:if={form.errors.email} class="error">{form.errors.email}</p>
-        </div>
+        <Field label="Email" error={form.errors.email ?? ""}>
+          <Input type="email" name="email" value={form.values.email} placeholder="you@example.org" required
+                 attrs={{ autocomplete: "email", autocapitalize: "none", spellcheck: "false" }} />
+        </Field>
 
-        <div class="field">
-          <label for="phone">Phone</label>
-          <input id="phone" name="phone" type="tel" value={form.values.phone}
-                 autocomplete="tel" placeholder="(312) 555-0142"
-                 class={[form.errors.phone && "is-error"]} required>
-          <p e:if={form.errors.phone} class="error">{form.errors.phone}</p>
-          <p e:else class="hint">So the coordinator can reach you on the day.</p>
-        </div>
+        <Field label="Phone" description="So the coordinator can reach you on the day." error={form.errors.phone ?? ""}>
+          <Input type="tel" name="phone" value={form.values.phone} placeholder="(312) 555-0142" required
+                 attrs={{ autocomplete: "tel" }} />
+        </Field>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" value={form.values.password}
-                 autocomplete="new-password" minlength={MIN_PASSWORD}
-                 class={[form.errors.password && "is-error"]} required>
-          <p e:if={form.errors.password} class="error">{form.errors.password}</p>
-          <p e:else class="hint">At least {MIN_PASSWORD} characters.</p>
-        </div>
+        <Field label="Password" description={`At least ${MIN_PASSWORD} characters.`} error={form.errors.password ?? ""}>
+          <Input type="password" name="password" value={form.values.password} required
+                 attrs={{ autocomplete: "new-password", minlength: MIN_PASSWORD }} />
+        </Field>
 
-        <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Create account</button>
+        <Button type="submit" variant="primary" block loading={form.busy}>Create account</Button>
 
         <p class="hint">Already volunteering? <a href="/signin">Sign in</a></p>
       </form>
