@@ -80,7 +80,6 @@
 
 .auth-panel .lede {
   margin: 0;
-  color: var(--ink-soft);
 }
 
 @media (max-width: 52rem) {
